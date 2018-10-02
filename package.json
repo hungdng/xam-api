@@ -1,0 +1,45 @@
+{
+  "name": "xamp-api",
+  "version": "1.0.0",
+  "description": "xamp api",
+  "main": "index.js",
+  "scripts": {
+    "dev:build": "webpack -w",
+    "dev": "cross-env NODE_ENV=development nodemon dist/index.bundle.js"
+  },
+  "author": "hungta",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt-nodejs": "^0.0.3",
+    "body-parser": "^1.18.2",
+    "compression": "^1.7.2",
+    "cross-env": "^5.1.4",
+    "express": "^4.16.3",
+    "express-validation": "^1.0.2",
+    "helmet": "^3.12.0",
+    "http-status": "^1.0.1",
+    "joi": "^13.1.2",
+    "jsonwebtoken": "^8.2.1",
+    "mongoose": "^5.0.13",
+    "mongoose-unique-validator": "^2.0.0",
+    "nodemailer": "^4.6.4",
+    "passport": "^0.4.0",
+    "passport-jwt": "^4.0.0",
+    "passport-local": "^1.0.0",
+    "slug": "^0.9.1",
+    "validator": "^9.4.1"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-loader": "^7.1.4",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "eslint": "^4.19.1",
+    "eslint-config-equimper": "^2.2.2",
+    "morgan": "^1.9.0",
+    "nodemon": "^1.17.3",
+    "rimraf": "^2.6.2",
+    "webpack": "^2.5.1",
+    "webpack-node-externals": "^1.7.2"
+  }
+}
