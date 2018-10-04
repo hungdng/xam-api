@@ -23,7 +23,7 @@ export async function getProducts(req, res) {
 
 export async function getProductById(req, res) {
   try {
-    const product = await Product.findById(req.params.id).populate('category');
+    const product = await Product.findById(req.params.id);
     return res.status(HTTPStatus.OK).json(product);
   } catch (error) {
     return res.status(HTTPStatus.BAD_REQUEST).json(error);

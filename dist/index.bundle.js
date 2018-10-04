@@ -64,7 +64,7 @@ module.exports =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 11);
+/******/ 	return __webpack_require__(__webpack_require__.s = 14);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -77,10 +77,16 @@ module.exports = require("express");
 /* 1 */
 /***/ (function(module, exports) {
 
-module.exports = require("mongoose");
+module.exports = require("cloudinary");
 
 /***/ }),
 /* 2 */
+/***/ (function(module, exports) {
+
+module.exports = require("mongoose");
+
+/***/ }),
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -120,7 +126,7 @@ function envConfig(env) {
 exports.default = Object.assign({}, defaultConfig, envConfig(process.env.NODE_ENV));
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -136,11 +142,11 @@ exports.getProductByCategoryId = getProductByCategoryId;
 exports.updateProduct = updateProduct;
 exports.deleteProduct = deleteProduct;
 
-var _httpStatus = __webpack_require__(5);
+var _httpStatus = __webpack_require__(6);
 
 var _httpStatus2 = _interopRequireDefault(_httpStatus);
 
-var _product = __webpack_require__(16);
+var _product = __webpack_require__(21);
 
 var _product2 = _interopRequireDefault(_product);
 
@@ -168,7 +174,7 @@ async function getProducts(req, res) {
 
 async function getProductById(req, res) {
   try {
-    const product = await _product2.default.findById(req.params.id).populate('category');
+    const product = await _product2.default.findById(req.params.id);
     return res.status(_httpStatus2.default.OK).json(product);
   } catch (error) {
     return res.status(_httpStatus2.default.BAD_REQUEST).json(error);
@@ -220,41 +226,55 @@ async function deleteProduct(req, res) {
 }
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports) {
 
 module.exports = require("express-validation");
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports) {
 
 module.exports = require("http-status");
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports) {
 
 module.exports = require("joi");
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports) {
 
 module.exports = require("slug");
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var _mongoose = __webpack_require__(1);
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+const cloudinaryName = exports.cloudinaryName = 'dnenzepnr';
+const cloudinaryApiKey = exports.cloudinaryApiKey = '321179781998973';
+const cloudinaryApiSecret = exports.cloudinaryApiSecret = '2tsFFm1vaHIEDPBxvoiyWjyV99I';
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _mongoose = __webpack_require__(2);
 
 var _mongoose2 = _interopRequireDefault(_mongoose);
 
-var _constants = __webpack_require__(2);
+var _constants = __webpack_require__(3);
 
 var _constants2 = _interopRequireDefault(_constants);
 
@@ -276,7 +296,7 @@ _mongoose2.default.connection.once('open', () => console.log('Mongo DB Running')
 });
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -286,19 +306,19 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _morgan = __webpack_require__(23);
+var _morgan = __webpack_require__(28);
 
 var _morgan2 = _interopRequireDefault(_morgan);
 
-var _bodyParser = __webpack_require__(19);
+var _bodyParser = __webpack_require__(24);
 
 var _bodyParser2 = _interopRequireDefault(_bodyParser);
 
-var _compression = __webpack_require__(20);
+var _compression = __webpack_require__(25);
 
 var _compression2 = _interopRequireDefault(_compression);
 
-var _helmet = __webpack_require__(21);
+var _helmet = __webpack_require__(26);
 
 var _helmet2 = _interopRequireDefault(_helmet);
 
@@ -322,7 +342,7 @@ exports.default = app => {
 };
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -332,23 +352,63 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _category = __webpack_require__(14);
+var _category = __webpack_require__(19);
 
 var _category2 = _interopRequireDefault(_category);
 
-var _product = __webpack_require__(17);
+var _product = __webpack_require__(22);
 
 var _product2 = _interopRequireDefault(_product);
+
+var _image = __webpack_require__(16);
+
+var _image2 = _interopRequireDefault(_image);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = app => {
   app.use('/api/v1/categories', _category2.default);
   app.use('/api/v1/products', _product2.default);
+  app.use('/api/v1/images', _image2.default);
 };
 
 /***/ }),
-/* 11 */
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.uploadImages = undefined;
+
+var _cloudinary = __webpack_require__(1);
+
+var _cloudinary2 = _interopRequireDefault(_cloudinary);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const uploadImages = exports.uploadImages = images => new Promise((resolve, reject) => {
+  let imageCount = images.length,
+      links = [];
+  for (let index = 0; index < imageCount; index++) {
+    const image = images[index];
+    _cloudinary2.default.v2.uploader.upload_stream({ resource_type: 'raw' }, (error, result) => {
+      if (result) {
+        links.push(result.url);
+        console.log(links);
+        links.length === imageCount && resolve(links);
+      } else if (error) {
+        reject(error);
+      }
+    }).end(image.buffer);
+  }
+});
+
+/***/ }),
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -358,25 +418,42 @@ var _express = __webpack_require__(0);
 
 var _express2 = _interopRequireDefault(_express);
 
-var _constants = __webpack_require__(2);
+var _constants = __webpack_require__(3);
 
 var _constants2 = _interopRequireDefault(_constants);
 
-__webpack_require__(8);
+__webpack_require__(10);
 
-var _middlewares = __webpack_require__(9);
+var _middlewares = __webpack_require__(11);
 
 var _middlewares2 = _interopRequireDefault(_middlewares);
 
-var _modules = __webpack_require__(10);
+var _modules = __webpack_require__(12);
 
 var _modules2 = _interopRequireDefault(_modules);
+
+var _cloudinary = __webpack_require__(1);
+
+var _cloudinary2 = _interopRequireDefault(_cloudinary);
+
+var _cloudinary3 = __webpack_require__(9);
+
+var cloudinaryConfig = _interopRequireWildcard(_cloudinary3);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 const app = (0, _express2.default)(); /* eslint-disable no-console */
 
 (0, _middlewares2.default)(app);
+
+// configure cloudinary
+_cloudinary2.default.config({
+  cloud_name: cloudinaryConfig.cloudinaryName,
+  api_key: cloudinaryConfig.cloudinaryApiKey,
+  api_secret: cloudinaryConfig.cloudinaryApiSecret
+});
 
 app.get('/', (req, res) => {
   res.send('Hello HungTA.');
@@ -399,7 +476,72 @@ app.listen(_constants2.default.PORT, err => {
 });
 
 /***/ }),
-/* 12 */
+/* 15 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.uploadImages = undefined;
+
+var _cloudinary = __webpack_require__(1);
+
+var _cloudinary2 = _interopRequireDefault(_cloudinary);
+
+var _upload = __webpack_require__(13);
+
+var uploadHelper = _interopRequireWildcard(_upload);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const uploadImages = exports.uploadImages = async (req, res, next) => {
+  const links = await uploadHelper.uploadImages(req.files);
+  console.log(links);
+  // const images = [];
+  // for (let index = 0; index < links.length; index++) {
+  //   const link = links[index];
+  //   const image = await Image.create({ thumb: link, origin: link });
+  //   images.push(image);
+  // }
+  res.json(links);
+};
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _express = __webpack_require__(0);
+
+var _image = __webpack_require__(15);
+
+var imagesController = _interopRequireWildcard(_image);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+const multer = __webpack_require__(29);
+
+const storage = multer.memoryStorage();
+const parser = multer({ storage });
+
+const routes = new _express.Router();
+routes.post('/', parser.array('images', 10), imagesController.uploadImages);
+
+exports.default = routes;
+
+/***/ }),
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -414,11 +556,11 @@ exports.getById = getById;
 exports.updateCategory = updateCategory;
 exports.deleteCategory = deleteCategory;
 
-var _httpStatus = __webpack_require__(5);
+var _httpStatus = __webpack_require__(6);
 
 var _httpStatus2 = _interopRequireDefault(_httpStatus);
 
-var _category = __webpack_require__(13);
+var _category = __webpack_require__(18);
 
 var _category2 = _interopRequireDefault(_category);
 
@@ -486,7 +628,7 @@ async function deleteCategory(req, res) {
 }
 
 /***/ }),
-/* 13 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -496,11 +638,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _mongoose = __webpack_require__(1);
+var _mongoose = __webpack_require__(2);
 
 var _mongoose2 = _interopRequireDefault(_mongoose);
 
-var _slug = __webpack_require__(7);
+var _slug = __webpack_require__(8);
 
 var _slug2 = _interopRequireDefault(_slug);
 
@@ -543,7 +685,7 @@ CategoriesSchema.statics = {
 exports.default = _mongoose2.default.model('Category', CategoriesSchema);
 
 /***/ }),
-/* 14 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -555,19 +697,19 @@ Object.defineProperty(exports, "__esModule", {
 
 var _express = __webpack_require__(0);
 
-var _expressValidation = __webpack_require__(4);
+var _expressValidation = __webpack_require__(5);
 
 var _expressValidation2 = _interopRequireDefault(_expressValidation);
 
-var _category = __webpack_require__(12);
+var _category = __webpack_require__(17);
 
 var categoriesController = _interopRequireWildcard(_category);
 
-var _product = __webpack_require__(3);
+var _product = __webpack_require__(4);
 
 var productsController = _interopRequireWildcard(_product);
 
-var _category2 = __webpack_require__(15);
+var _category2 = __webpack_require__(20);
 
 var _category3 = _interopRequireDefault(_category2);
 
@@ -586,7 +728,7 @@ routes.delete('/:id', categoriesController.deleteCategory);
 exports.default = routes;
 
 /***/ }),
-/* 15 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -596,7 +738,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _joi = __webpack_require__(6);
+var _joi = __webpack_require__(7);
 
 var _joi2 = _interopRequireDefault(_joi);
 
@@ -616,7 +758,7 @@ exports.default = {
 };
 
 /***/ }),
-/* 16 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -626,15 +768,15 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _mongoose = __webpack_require__(1);
+var _mongoose = __webpack_require__(2);
 
 var _mongoose2 = _interopRequireDefault(_mongoose);
 
-var _slug = __webpack_require__(7);
+var _slug = __webpack_require__(8);
 
 var _slug2 = _interopRequireDefault(_slug);
 
-var _mongooseUniqueValidator = __webpack_require__(22);
+var _mongooseUniqueValidator = __webpack_require__(27);
 
 var _mongooseUniqueValidator2 = _interopRequireDefault(_mongooseUniqueValidator);
 
@@ -715,7 +857,7 @@ ProductSchema.statics = {
 exports.default = _mongoose2.default.model('Product', ProductSchema);
 
 /***/ }),
-/* 17 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -727,15 +869,15 @@ Object.defineProperty(exports, "__esModule", {
 
 var _express = __webpack_require__(0);
 
-var _expressValidation = __webpack_require__(4);
+var _expressValidation = __webpack_require__(5);
 
 var _expressValidation2 = _interopRequireDefault(_expressValidation);
 
-var _product = __webpack_require__(3);
+var _product = __webpack_require__(4);
 
 var productsController = _interopRequireWildcard(_product);
 
-var _product2 = __webpack_require__(18);
+var _product2 = __webpack_require__(23);
 
 var _product3 = _interopRequireDefault(_product2);
 
@@ -753,7 +895,7 @@ routes.delete('/:id', productsController.deleteProduct);
 exports.default = routes;
 
 /***/ }),
-/* 18 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -763,7 +905,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _joi = __webpack_require__(6);
+var _joi = __webpack_require__(7);
 
 var _joi2 = _interopRequireDefault(_joi);
 
@@ -780,34 +922,40 @@ exports.default = {
 };
 
 /***/ }),
-/* 19 */
+/* 24 */
 /***/ (function(module, exports) {
 
 module.exports = require("body-parser");
 
 /***/ }),
-/* 20 */
+/* 25 */
 /***/ (function(module, exports) {
 
 module.exports = require("compression");
 
 /***/ }),
-/* 21 */
+/* 26 */
 /***/ (function(module, exports) {
 
 module.exports = require("helmet");
 
 /***/ }),
-/* 22 */
+/* 27 */
 /***/ (function(module, exports) {
 
 module.exports = require("mongoose-unique-validator");
 
 /***/ }),
-/* 23 */
+/* 28 */
 /***/ (function(module, exports) {
 
 module.exports = require("morgan");
+
+/***/ }),
+/* 29 */
+/***/ (function(module, exports) {
+
+module.exports = require("multer");
 
 /***/ })
 /******/ ]);

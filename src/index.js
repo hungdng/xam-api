@@ -6,8 +6,19 @@ import middlewaresConfig from './config/middlewares';
 
 import apiRoputes from './modules';
 
+import cloudinary from 'cloudinary';
+
+import * as cloudinaryConfig from './config/cloudinary';
+
 const app = express();
 middlewaresConfig(app);
+
+// configure cloudinary
+cloudinary.config({
+  cloud_name: cloudinaryConfig.cloudinaryName,
+  api_key: cloudinaryConfig.cloudinaryApiKey,
+  api_secret: cloudinaryConfig.cloudinaryApiSecret,
+});
 
 app.get('/', (req, res) => {
   res.send('Hello HungTA.');
