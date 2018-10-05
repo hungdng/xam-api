@@ -259,7 +259,7 @@ module.exports = require("slug");
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-const cloudinaryName = exports.cloudinaryName = 'dnenzepnr';
+const cloudinaryName = exports.cloudinaryName = 'hungta';
 const cloudinaryApiKey = exports.cloudinaryApiKey = '321179781998973';
 const cloudinaryApiSecret = exports.cloudinaryApiSecret = '2tsFFm1vaHIEDPBxvoiyWjyV99I';
 
@@ -382,7 +382,7 @@ exports.default = app => {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.uploadImages = undefined;
+exports.UploadStorageCloudinary = undefined;
 
 var _cloudinary = __webpack_require__(1);
 
@@ -390,21 +390,35 @@ var _cloudinary2 = _interopRequireDefault(_cloudinary);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-const uploadImages = exports.uploadImages = images => new Promise((resolve, reject) => {
-  let imageCount = images.length,
-      links = [];
-  for (let index = 0; index < imageCount; index++) {
-    const image = images[index];
-    _cloudinary2.default.v2.uploader.upload_stream({ resource_type: 'raw' }, (error, result) => {
-      if (result) {
-        links.push(result.url);
-        console.log(links);
-        links.length === imageCount && resolve(links);
-      } else if (error) {
-        reject(error);
-      }
-    }).end(image.buffer);
+const UploadStorageCloudinary = exports.UploadStorageCloudinary = files => new Promise((resolve, reject) => {
+  const arrayFile = [];
+
+  if (files.length <= 0) {
+    reject('Not file');
   }
+
+  files.map((file, index) => {
+    const nameFile = `${Date.now()}${index}`;
+
+    const resourceType = file.mimetype.includes('image') ? 'image' : 'video';
+
+    _cloudinary2.default.v2.uploader.upload_stream({ resourceType: 'raw' }, (error, result) => {
+      if (error) {
+        reject(result);
+      }
+
+      const url = result.secure_url;
+      arrayFile.push({
+        _id: nameFile.toString(),
+        url,
+        type: file.mimetype
+      });
+
+      if (arrayFile.length === files.length) {
+        resolve(arrayFile);
+      }
+    }, { resourceType }).end(file.buffer);
+  });
 });
 
 /***/ }),
@@ -487,28 +501,29 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.uploadImages = undefined;
 
-var _cloudinary = __webpack_require__(1);
-
-var _cloudinary2 = _interopRequireDefault(_cloudinary);
-
 var _upload = __webpack_require__(13);
 
 var uploadHelper = _interopRequireWildcard(_upload);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+const uploadImages = exports.uploadImages = async (req, res) => {
+  const { files } = req;
 
-const uploadImages = exports.uploadImages = async (req, res, next) => {
-  const links = await uploadHelper.uploadImages(req.files);
-  console.log(links);
-  // const images = [];
-  // for (let index = 0; index < links.length; index++) {
-  //   const link = links[index];
-  //   const image = await Image.create({ thumb: link, origin: link });
-  //   images.push(image);
-  // }
-  res.json(links);
+  try {
+    if (files.length > 0) {
+      const response = await uploadHelper.UploadStorageCloudinary(files);
+      return res.status(200).send(response);
+    }
+
+    return res.status(400).send({
+      status: 'File required'
+    });
+  } catch (error) {
+    return res.status(400).send({
+      status: error.error.message
+    });
+  }
 };
 
 /***/ }),
