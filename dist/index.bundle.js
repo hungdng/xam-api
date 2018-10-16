@@ -64,7 +64,7 @@ module.exports =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 17);
+/******/ 	return __webpack_require__(__webpack_require__.s = 19);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -164,7 +164,7 @@ var _httpStatus = __webpack_require__(4);
 
 var _httpStatus2 = _interopRequireDefault(_httpStatus);
 
-var _product = __webpack_require__(24);
+var _product = __webpack_require__(26);
 
 var _product2 = _interopRequireDefault(_product);
 
@@ -262,15 +262,17 @@ var _validator = __webpack_require__(40);
 
 var _validator2 = _interopRequireDefault(_validator);
 
-var _mongooseUniqueValidator = __webpack_require__(10);
+var _bcryptNodejs = __webpack_require__(31);
 
-var _mongooseUniqueValidator2 = _interopRequireDefault(_mongooseUniqueValidator);
-
-var _jsonwebtoken = __webpack_require__(34);
+var _jsonwebtoken = __webpack_require__(35);
 
 var _jsonwebtoken2 = _interopRequireDefault(_jsonwebtoken);
 
-var _bcryptNodejs = __webpack_require__(30);
+var _mongooseUniqueValidator = __webpack_require__(11);
+
+var _mongooseUniqueValidator2 = _interopRequireDefault(_mongooseUniqueValidator);
+
+var _user = __webpack_require__(9);
 
 var _constants = __webpack_require__(1);
 
@@ -282,30 +284,47 @@ const UserSchema = new _mongoose.Schema({
   email: {
     type: String,
     unique: true,
-    required: [true, 'Email is required'],
+    required: [true, 'Email is required!'],
     trim: true,
     validate: {
       validator(email) {
         return _validator2.default.isEmail(email);
       },
-      message: '{VALUE} is not a valid ermail!'
+      message: '{VALUE} is not a valid email!'
     }
   },
-  fullname: {
+  firstName: {
     type: String,
-    required: [true, 'Full name is required'],
+    required: [true, 'FirstName is required!'],
     trim: true
+  },
+  lastName: {
+    type: String,
+    required: [true, 'LastName is required!'],
+    trim: true
+  },
+  userName: {
+    type: String,
+    required: [true, 'UserName is required!'],
+    trim: true,
+    unique: true
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: [true, 'Password is required!'],
     trim: true,
-    minlength: [6, 'Password need to be longer!']
+    minlength: [6, 'Password need to be longer!'],
+    validate: {
+      validator(password) {
+        return _user.passwordReg.test(password);
+      },
+      message: '{VALUE} is not a valid password!'
+    }
   }
 }, { timestamps: true });
 
 UserSchema.plugin(_mongooseUniqueValidator2.default, {
-  message: '{VALUE} already taken'
+  message: '{VALUE} already taken!'
 });
 
 UserSchema.pre('save', function (next) {
@@ -320,29 +339,48 @@ UserSchema.methods = {
   _hashPassword(password) {
     return (0, _bcryptNodejs.hashSync)(password);
   },
-
-  _authenticateUser(password) {
+  authenticateUser(password) {
     return (0, _bcryptNodejs.compareSync)(password, this.password);
   },
-
-  _createToken() {
+  createToken() {
     return _jsonwebtoken2.default.sign({
       _id: this._id
     }, _constants2.default.JWT_SECRET);
   },
-
   toAuthJSON() {
-    return Object.assign({
-      token: `${this._createToken()}`
-    }, this.toJSON());
+    return {
+      _id: this._id,
+      userName: this.userName,
+      token: `${this.createToken()}`
+    };
   },
-
   toJSON() {
     return {
       _id: this._id,
-      fullname: this.fullname,
-      email: this.email
+      userName: this.userName
     };
+  },
+
+  _favorites: {
+    async posts(postId) {
+      if (this.favorites.posts.indexOf(postId) >= 0) {
+        this.favorites.posts.remove(postId);
+        await Post.decFavoriteCount(postId);
+      } else {
+        this.favorites.posts.push(postId);
+        await Post.incFavoriteCount(postId);
+      }
+
+      return this.save();
+    },
+
+    isPostIsFavorite(postId) {
+      if (this.favorites.posts.indexOf(postId) >= 0) {
+        return true;
+      }
+
+      return false;
+    }
   }
 };
 
@@ -358,9 +396,41 @@ exports.default = _mongoose2.default.model('User', UserSchema);
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.passwordReg = undefined;
+
+var _joi = __webpack_require__(5);
+
+var _joi2 = _interopRequireDefault(_joi);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const passwordReg = exports.passwordReg = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/;
+
+exports.default = {
+  signup: {
+    body: {
+      email: _joi2.default.string().email().required(),
+      password: _joi2.default.string().regex(passwordReg).required(),
+      firstName: _joi2.default.string().required(),
+      lastName: _joi2.default.string().required(),
+      userName: _joi2.default.string().required()
+    }
+  }
+};
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 exports.authJwt = exports.authLocal = undefined;
 
-var _passport = __webpack_require__(37);
+var _passport = __webpack_require__(12);
 
 var _passport2 = _interopRequireDefault(_passport);
 
@@ -380,7 +450,7 @@ var _constants2 = _interopRequireDefault(_constants);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// localStrategy
+// Local strategy
 const localOpts = {
   usernameField: 'email'
 };
@@ -390,18 +460,19 @@ const localStrategy = new _passportLocal2.default(localOpts, async (email, passw
     const user = await _user2.default.findOne({ email });
     if (!user) {
       return done(null, false);
-    } else if (!user._authenticateUser(password)) {
+    } else if (!user.authenticateUser(password)) {
       return done(null, false);
     }
+
     return done(null, user);
-  } catch (error) {
-    return done(error, false);
+  } catch (e) {
+    return done(e, false);
   }
 });
 
-// JwtStrategy
+// Jwt strategy
 const jwtOpts = {
-  jwtFromRequest: _passportJwt.ExtractJwt.fromAuthHeaderWithScheme('Bearer'),
+  jwtFromRequest: _passportJwt.ExtractJwt.fromAuthHeader('authorization'),
   secretOrKey: _constants2.default.JWT_SECRET
 };
 
@@ -413,9 +484,9 @@ const jwtStrategy = new _passportJwt.Strategy(jwtOpts, async (payload, done) => 
       return done(null, false);
     }
 
-    return done(null, false);
-  } catch (error) {
-    return done(error, false);
+    return done(null, user);
+  } catch (e) {
+    return done(e, false);
   }
 });
 
@@ -426,19 +497,25 @@ const authLocal = exports.authLocal = _passport2.default.authenticate('local', {
 const authJwt = exports.authJwt = _passport2.default.authenticate('jwt', { session: false });
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports) {
 
 module.exports = require("mongoose-unique-validator");
 
 /***/ }),
-/* 11 */
+/* 12 */
+/***/ (function(module, exports) {
+
+module.exports = require("passport");
+
+/***/ }),
+/* 13 */
 /***/ (function(module, exports) {
 
 module.exports = require("slug");
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -452,7 +529,7 @@ const cloudinaryApiKey = exports.cloudinaryApiKey = '321179781998973';
 const cloudinaryApiSecret = exports.cloudinaryApiSecret = '2tsFFm1vaHIEDPBxvoiyWjyV99I';
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -484,7 +561,7 @@ _mongoose2.default.connection.once('open', () => console.log('Mongo DB Running')
 });
 
 /***/ }),
-/* 14 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -494,21 +571,25 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _morgan = __webpack_require__(35);
+var _morgan = __webpack_require__(36);
 
 var _morgan2 = _interopRequireDefault(_morgan);
 
-var _bodyParser = __webpack_require__(31);
+var _bodyParser = __webpack_require__(32);
 
 var _bodyParser2 = _interopRequireDefault(_bodyParser);
 
-var _compression = __webpack_require__(32);
+var _compression = __webpack_require__(33);
 
 var _compression2 = _interopRequireDefault(_compression);
 
-var _helmet = __webpack_require__(33);
+var _helmet = __webpack_require__(34);
 
 var _helmet2 = _interopRequireDefault(_helmet);
+
+var _passport = __webpack_require__(12);
+
+var _passport2 = _interopRequireDefault(_passport);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -523,6 +604,7 @@ exports.default = app => {
 
   app.use(_bodyParser2.default.json());
   app.use(_bodyParser2.default.urlencoded({ extended: true }));
+  app.use(_passport2.default.initialize());
 
   if (isDev) {
     app.use((0, _morgan2.default)('dev'));
@@ -530,7 +612,7 @@ exports.default = app => {
 };
 
 /***/ }),
-/* 15 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -540,19 +622,19 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _category = __webpack_require__(22);
+var _category = __webpack_require__(24);
 
 var _category2 = _interopRequireDefault(_category);
 
-var _product = __webpack_require__(25);
+var _product = __webpack_require__(27);
 
 var _product2 = _interopRequireDefault(_product);
 
-var _image = __webpack_require__(19);
+var _image = __webpack_require__(21);
 
 var _image2 = _interopRequireDefault(_image);
 
-var _user = __webpack_require__(28);
+var _user = __webpack_require__(30);
 
 var _user2 = _interopRequireDefault(_user);
 
@@ -566,7 +648,7 @@ exports.default = app => {
 };
 
 /***/ }),
-/* 16 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -615,7 +697,7 @@ const UploadStorageCloudinary = exports.UploadStorageCloudinary = files => new P
 });
 
 /***/ }),
-/* 17 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -629,13 +711,13 @@ var _constants = __webpack_require__(1);
 
 var _constants2 = _interopRequireDefault(_constants);
 
-__webpack_require__(13);
+__webpack_require__(15);
 
-var _middlewares = __webpack_require__(14);
+var _middlewares = __webpack_require__(16);
 
 var _middlewares2 = _interopRequireDefault(_middlewares);
 
-var _modules = __webpack_require__(15);
+var _modules = __webpack_require__(17);
 
 var _modules2 = _interopRequireDefault(_modules);
 
@@ -643,7 +725,7 @@ var _cloudinary = __webpack_require__(6);
 
 var _cloudinary2 = _interopRequireDefault(_cloudinary);
 
-var _cloudinary3 = __webpack_require__(12);
+var _cloudinary3 = __webpack_require__(14);
 
 var cloudinaryConfig = _interopRequireWildcard(_cloudinary3);
 
@@ -683,7 +765,7 @@ app.listen(_constants2.default.PORT, err => {
 });
 
 /***/ }),
-/* 18 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -694,7 +776,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.uploadImages = undefined;
 
-var _upload = __webpack_require__(16);
+var _upload = __webpack_require__(18);
 
 var uploadHelper = _interopRequireWildcard(_upload);
 
@@ -720,7 +802,7 @@ const uploadImages = exports.uploadImages = async (req, res) => {
 };
 
 /***/ }),
-/* 19 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -732,13 +814,13 @@ Object.defineProperty(exports, "__esModule", {
 
 var _express = __webpack_require__(0);
 
-var _image = __webpack_require__(18);
+var _image = __webpack_require__(20);
 
 var imagesController = _interopRequireWildcard(_image);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
-const multer = __webpack_require__(36);
+const multer = __webpack_require__(37);
 
 const storage = multer.memoryStorage();
 const parser = multer({ storage });
@@ -749,7 +831,7 @@ routes.post('/', parser.array('images', 10), imagesController.uploadImages);
 exports.default = routes;
 
 /***/ }),
-/* 20 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -768,7 +850,7 @@ var _httpStatus = __webpack_require__(4);
 
 var _httpStatus2 = _interopRequireDefault(_httpStatus);
 
-var _category = __webpack_require__(21);
+var _category = __webpack_require__(23);
 
 var _category2 = _interopRequireDefault(_category);
 
@@ -836,7 +918,7 @@ async function deleteCategory(req, res) {
 }
 
 /***/ }),
-/* 21 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -850,7 +932,7 @@ var _mongoose = __webpack_require__(2);
 
 var _mongoose2 = _interopRequireDefault(_mongoose);
 
-var _slug = __webpack_require__(11);
+var _slug = __webpack_require__(13);
 
 var _slug2 = _interopRequireDefault(_slug);
 
@@ -893,7 +975,7 @@ CategoriesSchema.statics = {
 exports.default = _mongoose2.default.model('Category', CategoriesSchema);
 
 /***/ }),
-/* 22 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -909,7 +991,7 @@ var _expressValidation = __webpack_require__(3);
 
 var _expressValidation2 = _interopRequireDefault(_expressValidation);
 
-var _category = __webpack_require__(20);
+var _category = __webpack_require__(22);
 
 var categoriesController = _interopRequireWildcard(_category);
 
@@ -917,28 +999,28 @@ var _product = __webpack_require__(7);
 
 var productsController = _interopRequireWildcard(_product);
 
-var _category2 = __webpack_require__(23);
+var _category2 = __webpack_require__(25);
 
 var _category3 = _interopRequireDefault(_category2);
 
-var _auth = __webpack_require__(9);
+var _auth = __webpack_require__(10);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 const routes = new _express.Router();
-routes.post('/', (0, _expressValidation2.default)(_category3.default.createCategories), categoriesController.createCategory);
-routes.get('/', _auth.authLocal, categoriesController.getCategories);
-routes.get('/:id', categoriesController.getById);
-routes.get('/:id/products', productsController.getProductByCategoryId);
-routes.patch('/:id', (0, _expressValidation2.default)(_category3.default.updateCategories), categoriesController.updateCategory);
-routes.delete('/:id', categoriesController.deleteCategory);
+routes.post('/', _auth.authJwt, (0, _expressValidation2.default)(_category3.default.createCategories), categoriesController.createCategory);
+routes.get('/', _auth.authJwt, categoriesController.getCategories);
+routes.get('/:id', _auth.authJwt, categoriesController.getById);
+routes.get('/:id/products', _auth.authJwt, productsController.getProductByCategoryId);
+routes.patch('/:id', _auth.authJwt, (0, _expressValidation2.default)(_category3.default.updateCategories), categoriesController.updateCategory);
+routes.delete('/:id', _auth.authJwt, categoriesController.deleteCategory);
 
 exports.default = routes;
 
 /***/ }),
-/* 23 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -968,7 +1050,7 @@ exports.default = {
 };
 
 /***/ }),
-/* 24 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -982,11 +1064,11 @@ var _mongoose = __webpack_require__(2);
 
 var _mongoose2 = _interopRequireDefault(_mongoose);
 
-var _slug = __webpack_require__(11);
+var _slug = __webpack_require__(13);
 
 var _slug2 = _interopRequireDefault(_slug);
 
-var _mongooseUniqueValidator = __webpack_require__(10);
+var _mongooseUniqueValidator = __webpack_require__(11);
 
 var _mongooseUniqueValidator2 = _interopRequireDefault(_mongooseUniqueValidator);
 
@@ -1067,7 +1149,7 @@ ProductSchema.statics = {
 exports.default = _mongoose2.default.model('Product', ProductSchema);
 
 /***/ }),
-/* 25 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1087,25 +1169,27 @@ var _product = __webpack_require__(7);
 
 var productsController = _interopRequireWildcard(_product);
 
-var _product2 = __webpack_require__(26);
+var _product2 = __webpack_require__(28);
 
 var _product3 = _interopRequireDefault(_product2);
+
+var _auth = __webpack_require__(10);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 const routes = new _express.Router();
-routes.post('/', (0, _expressValidation2.default)(_product3.default.createProduct), productsController.createProduct);
-routes.get('/', productsController.getProducts);
-routes.get('/:id', productsController.getProductById);
-routes.put('/:id', productsController.updateProduct);
-routes.delete('/:id', productsController.deleteProduct);
+routes.post('/', _auth.authJwt, (0, _expressValidation2.default)(_product3.default.createProduct), productsController.createProduct);
+routes.get('/', _auth.authJwt, productsController.getProducts);
+routes.get('/:id', _auth.authJwt, productsController.getProductById);
+routes.put('/:id', _auth.authJwt, productsController.updateProduct);
+routes.delete('/:id', _auth.authJwt, productsController.deleteProduct);
 
 exports.default = routes;
 
 /***/ }),
-/* 26 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1132,7 +1216,7 @@ exports.default = {
 };
 
 /***/ }),
-/* 27 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1143,7 +1227,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.signUp = signUp;
 exports.login = login;
-exports.getByEmail = getByEmail;
 
 var _httpStatus = __webpack_require__(4);
 
@@ -1159,8 +1242,8 @@ async function signUp(req, res) {
   try {
     const user = await _user2.default.create(req.body);
     return res.status(_httpStatus2.default.CREATED).json(user.toAuthJSON());
-  } catch (error) {
-    return res.status(_httpStatus2.default.BAD_REQUEST).json(error);
+  } catch (e) {
+    return res.status(_httpStatus2.default.BAD_REQUEST).json(e);
   }
 }
 
@@ -1170,18 +1253,8 @@ function login(req, res, next) {
   return next();
 }
 
-async function getByEmail(req, res) {
-  try {
-    const email = req.params.email;
-    const user = await _user2.default.findOne({ email });
-    return res.status(_httpStatus2.default.OK).json(user.toAuthJSON());
-  } catch (error) {
-    return res.status(_httpStatus2.default.BAD_REQUEST).json(error);
-  }
-}
-
 /***/ }),
-/* 28 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1197,13 +1270,13 @@ var _expressValidation = __webpack_require__(3);
 
 var _expressValidation2 = _interopRequireDefault(_expressValidation);
 
-var _auth = __webpack_require__(9);
+var _auth = __webpack_require__(10);
 
-var _user = __webpack_require__(27);
+var _user = __webpack_require__(29);
 
 var userController = _interopRequireWildcard(_user);
 
-var _user2 = __webpack_require__(29);
+var _user2 = __webpack_require__(9);
 
 var _user3 = _interopRequireDefault(_user2);
 
@@ -1212,85 +1285,53 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 const routes = new _express.Router();
-routes.post('/', (0, _expressValidation2.default)(_user3.default.signup), userController.signUp);
-routes.get('/:email', userController.getByEmail);
+
+routes.post('/signup', (0, _expressValidation2.default)(_user3.default.signup), userController.signUp);
 routes.post('/login', _auth.authLocal, userController.login);
+
 exports.default = routes;
-
-/***/ }),
-/* 29 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _joi = __webpack_require__(5);
-
-var _joi2 = _interopRequireDefault(_joi);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-exports.default = {
-  signup: {
-    body: {
-      email: _joi2.default.string().email().required(),
-      password: _joi2.default.string().required(),
-      fullname: _joi2.default.string().required()
-    }
-  }
-};
-
-/***/ }),
-/* 30 */
-/***/ (function(module, exports) {
-
-module.exports = require("bcrypt-nodejs");
 
 /***/ }),
 /* 31 */
 /***/ (function(module, exports) {
 
-module.exports = require("body-parser");
+module.exports = require("bcrypt-nodejs");
 
 /***/ }),
 /* 32 */
 /***/ (function(module, exports) {
 
-module.exports = require("compression");
+module.exports = require("body-parser");
 
 /***/ }),
 /* 33 */
 /***/ (function(module, exports) {
 
-module.exports = require("helmet");
+module.exports = require("compression");
 
 /***/ }),
 /* 34 */
 /***/ (function(module, exports) {
 
-module.exports = require("jsonwebtoken");
+module.exports = require("helmet");
 
 /***/ }),
 /* 35 */
 /***/ (function(module, exports) {
 
-module.exports = require("morgan");
+module.exports = require("jsonwebtoken");
 
 /***/ }),
 /* 36 */
 /***/ (function(module, exports) {
 
-module.exports = require("multer");
+module.exports = require("morgan");
 
 /***/ }),
 /* 37 */
 /***/ (function(module, exports) {
 
-module.exports = require("passport");
+module.exports = require("multer");
 
 /***/ }),
 /* 38 */

@@ -5,7 +5,7 @@ import { Strategy as JWTStrategy, ExtractJwt } from 'passport-jwt';
 import User from '../modules/users/user.model';
 import constants from '../config/constants';
 
-// localStrategy
+// Local strategy
 const localOpts = {
   usernameField: 'email',
 };
@@ -17,19 +17,20 @@ const localStrategy = new LocalStrategy(
       const user = await User.findOne({ email });
       if (!user) {
         return done(null, false);
-      } else if (!user._authenticateUser(password)) {
+      } else if (!user.authenticateUser(password)) {
         return done(null, false);
       }
+
       return done(null, user);
-    } catch (error) {
-      return done(error, false);
+    } catch (e) {
+      return done(e, false);
     }
-  }
+  },
 );
 
-// JwtStrategy
+// Jwt strategy
 const jwtOpts = {
-  jwtFromRequest: ExtractJwt.fromAuthHeaderWithScheme('Bearer'),
+  jwtFromRequest: ExtractJwt.fromAuthHeader('authorization'),
   secretOrKey: constants.JWT_SECRET,
 };
 
@@ -41,9 +42,9 @@ const jwtStrategy = new JWTStrategy(jwtOpts, async (payload, done) => {
       return done(null, false);
     }
 
-    return done(null, false);
-  } catch (error) {
-    return done(error, false);
+    return done(null, user);
+  } catch (e) {
+    return done(e, false);
   }
 });
 
