@@ -7,8 +7,6 @@ const MenuSchema = new Schema(
     name: {
       type: String,
       trim: true,
-      required: [true, 'Menu name is required'],
-      minlength: [3, 'Menu name need to be longer!'],
       unique: true,
     },
 
@@ -31,7 +29,7 @@ MenuSchema.plugin(uniqueValidator, {
   message: '{VALUE} already taken',
 });
 
-MenuSchema.pre('validate', function (next) {
+MenuSchema.pre(function (next) {
   this._slugify();
   next();
 });

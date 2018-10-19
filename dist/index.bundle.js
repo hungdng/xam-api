@@ -105,7 +105,7 @@ const prodConfig = {
 };
 
 const defaultConfig = {
-  PORT: process.env.PORT || 80
+  PORT: process.env.PORT || 9000
 };
 
 function envConfig(env) {
@@ -1170,8 +1170,6 @@ const MenuSchema = new _mongoose.Schema({
   name: {
     type: String,
     trim: true,
-    required: [true, 'Menu name is required'],
-    minlength: [3, 'Menu name need to be longer!'],
     unique: true
   },
 
@@ -1193,7 +1191,7 @@ MenuSchema.plugin(_mongooseUniqueValidator2.default, {
   message: '{VALUE} already taken'
 });
 
-MenuSchema.pre('validate', function (next) {
+MenuSchema.pre(function (next) {
   this._slugify();
   next();
 });
