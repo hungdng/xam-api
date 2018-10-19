@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack -w",
-    "dev": "cross-env NODE_ENV=development nodemon dist/index.bundle.js"
+    "dev": "cross-env NODE_ENV=development nodemon dist/index.bundle.js",
+    "production": "cross-env NODE_ENV=production nodemon dist/index.bundle.js"
   },
   "author": "hungta",
   "license": "ISC",

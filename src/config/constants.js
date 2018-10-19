@@ -9,6 +9,8 @@ const testConfig = {
 
 const prodConfig = {
   // MONGO_URL: 'mongodb://localhost/shopdb',
+  MONGO_URL: 'mongodb://hungtran:Abc123456@ds119663.mlab.com:19663/shopdb',
+  JWT_SECRET: 'abcxyz',
 };
 
 const defaultConfig = {
