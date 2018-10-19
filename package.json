@@ -4,9 +4,9 @@
   "description": "xamp api",
   "main": "index.js",
   "scripts": {
-    "build": "webpack -w",
-    "dev": "cross-env NODE_ENV=development nodemon dist/index.bundle.js",
-    "start": "cross-env NODE_ENV=production nodemon dist/index.bundle.js"
+    "start": "cross-env NODE_ENV=production node dist/index.bundle.js",
+    "build": "webpack",
+    "dev": "cross-env NODE_ENV=development nodemon dist/index.bundle.js"
   },
   "author": "hungta",
   "license": "ISC",
