@@ -105,7 +105,7 @@ const prodConfig = {
 };
 
 const defaultConfig = {
-  PORT: process.env.PORT || 9000
+  PORT: process.env.PORT || 8080
 };
 
 function envConfig(env) {
@@ -175,7 +175,7 @@ const localStrategy = new _passportLocal2.default(localOpts, async (email, passw
 
 // Jwt strategy
 const jwtOpts = {
-  jwtFromRequest: _passportJwt.ExtractJwt.fromAuthHeaderAsBearerToken('authorization'),
+  jwtFromRequest: _passportJwt.ExtractJwt.fromAuthHeaderWithScheme('Bearer'),
   secretOrKey: _constants2.default.JWT_SECRET
 };
 
@@ -686,13 +686,16 @@ const UploadStorageCloudinary = exports.UploadStorageCloudinary = files => new P
 
     _cloudinary2.default.v2.uploader.upload_stream({ resourceType: 'raw' }, (error, result) => {
       if (error) {
-        reject(result);
+        console.log(result);reject(result);
       }
 
+      const ver = "v" + result.version;
       const url = result.secure_url;
+      const thumb = url.replace(ver, "w_200");
       arrayFile.push({
         _id: nameFile.toString(),
         url,
+        thumb,
         type: file.mimetype
       });
 
@@ -952,6 +955,14 @@ const CategoriesSchema = new _mongoose.Schema({
     required: [true, 'category name is required'],
     minlength: [2, 'category name need to be longer!'],
     unique: true
+  },
+  ImageUrl: {
+    type: String,
+    trim: true
+  },
+  thumbImageUrl: {
+    type: String,
+    trim: true
   },
   slug: {
     type: String,

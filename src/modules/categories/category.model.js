@@ -9,6 +9,14 @@ const CategoriesSchema = new Schema({
     minlength: [2, 'category name need to be longer!'],
     unique: true,
   },
+  ImageUrl: {
+    type: String,
+    trim: true
+  },
+  thumbImageUrl: {
+    type: String,
+    trim: true
+  },
   slug: {
     type: String,
     trim: true,

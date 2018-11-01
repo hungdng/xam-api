@@ -30,7 +30,7 @@ const localStrategy = new LocalStrategy(
 
 // Jwt strategy
 const jwtOpts = {
-  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken('authorization'),
+  jwtFromRequest: ExtractJwt.fromAuthHeaderWithScheme('Bearer'),
   secretOrKey: constants.JWT_SECRET,
 };
 
